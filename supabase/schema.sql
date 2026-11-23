@@ -100,6 +100,8 @@ declare t text;
 begin
   foreach t in array array['accounts','categories','transactions','budgets','recurring','loans','loan_payments'] loop
     execute format('alter table public.%I enable row level security', t);
+    -- Newer Supabase projects don't auto-grant table access; signed-in users need it (RLS still limits rows).
+    execute format('grant select, insert, update, delete on public.%I to authenticated', t);
     execute format('drop policy if exists "own rows" on public.%I', t);
     execute format(
       'create policy "own rows" on public.%I for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())',
