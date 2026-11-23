@@ -1,0 +1,31 @@
+import 'expo-sqlite/localStorage/install';
+
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { AppState, Platform } from 'react-native';
+
+const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+
+/** False until the user has filled in .env (see .env.example). */
+export const isSupabaseConfigured = url.startsWith('http') && key.length > 10;
+
+export const supabase: SupabaseClient = createClient(
+  isSupabaseConfigured ? url : 'https://placeholder.supabase.co',
+  isSupabaseConfigured ? key : 'placeholder-key',
+  {
+    auth: {
+      storage: localStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  },
+);
+
+// Keep the session fresh only while the app is in the foreground (native).
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') supabase.auth.startAutoRefresh();
+    else supabase.auth.stopAutoRefresh();
+  });
+}
